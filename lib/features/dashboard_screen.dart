@@ -29,7 +29,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> initWebView() async {
     await controller.initialize();
 
-    await controller.setBackgroundColor(Colors.transparent);
+    await controller.setBackgroundColor(
+      Colors.transparent,
+    );
 
     await controller.loadUrl(widget.url);
 
@@ -47,14 +49,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Welcome ${widget.userName}"),
+      body: SafeArea(
+        child: isLoading
+            ? SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height,
+                  child: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+              )
+
+            /// WEBVIEW
+            : SizedBox.expand(
+                child: Webview(controller),
+              ),
       ),
-      body: isLoading
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
-          : Webview(controller),
+
+      /// BACK BUTTON
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pop(context);
+        },
+        child: const Icon(
+          Icons.arrow_back_ios_new_outlined,
+        ),
+      ),
     );
   }
 }

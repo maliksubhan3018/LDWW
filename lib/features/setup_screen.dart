@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ldww/features/dashboard_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../../../widgets/custom_textfield.dart';
 
 enum ConnectionType {
@@ -22,22 +24,35 @@ class _SetupScreenState extends State<SetupScreen> {
 
   ConnectionType selectedType = ConnectionType.name;
 
-  void navigate() {
-    String url = "";
-
+  /// -----------------------------------
+  /// BUILD URL
+  /// -----------------------------------
+  String getUrl() {
     switch (selectedType) {
       case ConnectionType.name:
-        url = "http://localhost/fcc_mart";
-        break;
+        return "http://localhost/fcc_mart";
 
       case ConnectionType.nameIp:
-        url = "http://${ipController.text}/fcc_mart";
-        break;
+        return "http://${ipController.text.trim()}/fcc_mart";
 
       case ConnectionType.url:
-        url = urlController.text;
-        break;
+        String url = urlController.text.trim();
+
+        // Auto add http
+        if (!url.startsWith("http://") &&
+            !url.startsWith("https://")) {
+          url = "http://$url";
+        }
+
+        return url;
     }
+  }
+
+  /// -----------------------------------
+  /// OPEN INSIDE APP WEBVIEW
+  /// -----------------------------------
+  void navigate() {
+    final url = getUrl();
 
     Navigator.push(
       context,
@@ -50,6 +65,35 @@ class _SetupScreenState extends State<SetupScreen> {
     );
   }
 
+  /// -----------------------------------
+  /// OPEN IN CHROME
+  /// -----------------------------------
+  Future<void> openInChrome() async {
+    try {
+      final String url = getUrl();
+
+      final Uri uri = Uri.parse(url);
+
+      await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+    } catch (e) {
+      debugPrint("Chrome launch error: $e");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Unable to open browser",
+          ),
+        ),
+      );
+    }
+  }
+
+  /// -----------------------------------
+  /// DYNAMIC FIELDS
+  /// -----------------------------------
   Widget buildFields() {
     switch (selectedType) {
       case ConnectionType.name:
@@ -62,13 +106,13 @@ class _SetupScreenState extends State<SetupScreen> {
         return Column(
           children: [
             CustomTextField(
-              controller: nameController,
-              hint: "Enter Name",
+              controller: ipController,
+              hint: "Enter IP Address",
             ),
             const SizedBox(height: 15),
             CustomTextField(
-              controller: ipController,
-              hint: "Enter IP Address",
+              controller: nameController,
+              hint: "Enter Name",
             ),
           ],
         );
@@ -96,11 +140,11 @@ class _SetupScreenState extends State<SetupScreen> {
             itemBuilder: (context) => [
               const PopupMenuItem(
                 value: ConnectionType.name,
-                child: Text("Name"),
+                child: Text("Host"),
               ),
               const PopupMenuItem(
                 value: ConnectionType.nameIp,
-                child: Text("Name + IP"),
+                child: Text("IP + Host"),
               ),
               const PopupMenuItem(
                 value: ConnectionType.url,
@@ -117,10 +161,37 @@ class _SetupScreenState extends State<SetupScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               buildFields(),
+
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: navigate,
-                child: const Text("Open Dashboard"),
+
+              /// -----------------------------------
+              /// OPEN INSIDE APPLICATION
+              /// -----------------------------------
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: navigate,
+                  child: const Text(
+                    "Continue to Connect",
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 15),
+
+              /// -----------------------------------
+              /// OPEN IN CHROME
+              /// -----------------------------------
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton(
+                  onPressed: openInChrome,
+                  child: const Text(
+                    "Continue to Chrome",
+                  ),
+                ),
               ),
             ],
           ),
